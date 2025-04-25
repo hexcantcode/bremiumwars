@@ -3,35 +3,14 @@ import pandas as pd
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-from web3 import Web3
-import json
 import requests
+import json
 
 # Load environment variables
 load_dotenv()
 
-# Pyth Price Feed ABI
-PYTH_PRICE_FEED_ABI = json.loads('''[
-    {
-        "inputs": [],
-        "name": "getPrice",
-        "outputs": [
-            {"internalType": "int64", "name": "price", "type": "int64"},
-            {"internalType": "uint64", "name": "conf", "type": "uint64"},
-            {"internalType": "int32", "name": "expo", "type": "int32"},
-            {"internalType": "uint256", "name": "publishTime", "type": "uint256"}
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-]''')
-
 class TokenPriceComparer:
-    def __init__(self, main_token, comparison_tokens, rpc_url):
-        self.main_token = main_token
-        self.comparison_tokens = comparison_tokens
-        self.w3 = Web3(Web3.HTTPProvider(rpc_url))
-        
+    def __init__(self):
         # Pyth Price Feed IDs for Berachain (USD prices)
         self.price_feeds = {
             "BERA": "0x962088abcfdbdb6e30db2e340c8cf887d9efb311b1f2f17b155a63dbb6d40265",  # BERA/USD
@@ -66,34 +45,33 @@ class TokenPriceComparer:
             print(f"Error fetching price for {token_symbol}: {e}")
             return None
 
-    def calculate_percentage_difference(self, main_price, comparison_price):
-        if main_price and comparison_price:
-            return ((comparison_price - main_price) / main_price) * 100
+    def calculate_percentage_difference(self, base_price, comparison_price):
+        if base_price and comparison_price:
+            return ((comparison_price - base_price) / base_price) * 100
         return None
 
     def get_comparison_data(self):
-        # Get USD prices
-        bera_usd_price = self.get_token_price("BERA")
-        if not bera_usd_price:
+        # Get BERA price as base
+        bera_price = self.get_token_price("BERA")
+        if not bera_price:
             return None
 
         results = []
-        for token in self.comparison_tokens:
-            usd_price = self.get_token_price(token)
-            if usd_price:
-                # Convert to BERA price
-                bera_price = usd_price / bera_usd_price
-                percentage_diff = self.calculate_percentage_difference(1.0, bera_price)
+        for token in ["iBGT", "LBGT", "stBGT"]:
+            token_price = self.get_token_price(token)
+            if token_price:
+                # Calculate percentage difference against BERA
+                percentage_diff = self.calculate_percentage_difference(bera_price, token_price)
                 
                 results.append({
                     "token": token,
-                    "price": bera_price,
+                    "price": token_price,
                     "percentage_difference": percentage_diff
                 })
         
         return {
-            "main_token": self.main_token,
-            "main_price": 1.0,
+            "base_token": "BERA",
+            "base_price": bera_price,
             "comparisons": results,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
@@ -106,25 +84,18 @@ class TokenPriceComparer:
         print("\n" + "="*50)
         print(f"Price Comparison at {data['timestamp']}")
         print("="*50)
-        print(f"Main Token: {data['main_token']}")
-        print(f"Main Price: {data['main_price']:.8f} BERA")
+        print(f"Base Token: {data['base_token']}")
+        print(f"Base Price: ${data['base_price']:.8f}")
         print("\nComparison Tokens:")
         print("-"*50)
         
         for comp in data['comparisons']:
             print(f"\nToken: {comp['token']}")
-            print(f"Price: {comp['price']:.8f} BERA")
-            print(f"Percentage Difference: {comp['percentage_difference']:.2f}%")
+            print(f"Price: ${comp['price']:.8f}")
+            print(f"Percentage Difference from BERA: {comp['percentage_difference']:.2f}%")
 
 def main():
-    # Example usage
-    main_token = "BERA"  # Main token to compare against
-    comparison_tokens = ["iBGT", "LBGT", "stBGT"]  # BGT-related tokens
-    
-    # Use Berachain RPC URL
-    rpc_url = os.getenv("BERACHAIN_RPC_URL", "https://rpc.berachain.com")
-    
-    comparer = TokenPriceComparer(main_token, comparison_tokens, rpc_url)
+    comparer = TokenPriceComparer()
     
     try:
         while True:
