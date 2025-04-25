@@ -83,7 +83,7 @@ class TokenPriceComparer:
             if usd_price:
                 # Convert to BERA price
                 bera_price = usd_price / bera_usd_price
-                percentage_diff = self.calculate_percentage_difference(1.0, bera_price)  # Compare against 1 BERA
+                percentage_diff = self.calculate_percentage_difference(1.0, bera_price)
                 
                 results.append({
                     "token": token,
@@ -93,7 +93,7 @@ class TokenPriceComparer:
         
         return {
             "main_token": self.main_token,
-            "main_price": 1.0,  # BERA is always 1 BERA
+            "main_price": 1.0,
             "comparisons": results,
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
