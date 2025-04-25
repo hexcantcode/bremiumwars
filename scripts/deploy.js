@@ -7,7 +7,7 @@ async function main() {
 
     // Contract addresses
     const honeyTokenAddress = "0xFCBD14DC51f0A4d49d5E53C2E0950e0bC26d0Dce";
-    const pythAddress = "0xYOUR_PYTH_CONTRACT_ADDRESS"; // Need to get this from Berachain
+    const pythAddress = "0x2880aB155794e7179c9eE2e38200202908C17B43";
 
     // Pyth Price Feed IDs
     const pythPriceIds = {

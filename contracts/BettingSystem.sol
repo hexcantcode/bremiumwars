@@ -26,7 +26,7 @@ contract BettingSystem is Ownable {
 
     // Constants
     uint256 public constant EPOCH_DURATION = 1 days;
-    uint256 public constant MIN_STAKE_AMOUNT = 1 ether; // 1 HONEY token
+    uint256 public constant MIN_STAKE_AMOUNT = 1 * 10**18; // 1 HONEY token (18 decimals)
 
     // State variables
     mapping(uint256 => Epoch) public epochs;
@@ -45,7 +45,7 @@ contract BettingSystem is Ownable {
     event TokenAdded(address indexed token, address upStakingContract, address downStakingContract, bytes32 pythPriceId);
     event TokenRemoved(address indexed token);
 
-    constructor(address _honeyToken, address _pyth) {
+    constructor(address _honeyToken, address _pyth) Ownable(msg.sender) {
         honeyToken = IERC20(_honeyToken);
         pyth = IPyth(_pyth);
         currentEpochId = 1;
@@ -103,13 +103,13 @@ contract BettingSystem is Ownable {
         emit TokenRemoved(token);
     }
 
-    function updatePrices() external {
+    function updatePrices() public {
         require(epochs[currentEpochId].isActive, "No active epoch");
         
         // Get BERA price from Pyth
         bytes32 beraPriceId = supportedTokens[address(0)].pythPriceId;
         PythStructs.Price memory beraPrice = pyth.getPrice(beraPriceId);
-        uint256 beraPriceValue = uint256(beraPrice.price);
+        uint256 beraPriceValue = uint256(uint64(beraPrice.price));
         epochs[currentEpochId].tokenPrices[address(0)] = beraPriceValue;
 
         // Update prices for all tokens
@@ -118,7 +118,7 @@ contract BettingSystem is Ownable {
             if (supportedTokens[token].isActive) {
                 bytes32 priceId = supportedTokens[token].pythPriceId;
                 PythStructs.Price memory price = pyth.getPrice(priceId);
-                uint256 priceValue = uint256(price.price);
+                uint256 priceValue = uint256(uint64(price.price));
                 
                 epochs[currentEpochId].tokenPrices[token] = priceValue;
                 emit PriceUpdated(currentEpochId, token, priceValue);

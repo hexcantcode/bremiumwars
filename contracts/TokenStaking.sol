@@ -25,7 +25,7 @@ contract TokenStaking is Ownable {
     event RewardsClaimed(address indexed user, uint256 amount);
     event RewardsDistributed(uint256 totalAmount);
 
-    constructor(address _honeyToken, address _bettingSystem) {
+    constructor(address _honeyToken, address _bettingSystem) Ownable(msg.sender) {
         honeyToken = IERC20(_honeyToken);
         bettingSystem = _bettingSystem;
     }
@@ -67,12 +67,12 @@ contract TokenStaking is Ownable {
         
         // Calculate rewards based on stake weight
         for (uint256 i = 0; i < stakes[msg.sender].length; i++) {
-            Stake storage stake = stakes[msg.sender][i];
-            if (stake.amount > 0) {
-                uint256 stakeWeight = (stake.amount * 1e18) / totalStakedPerEpoch[stake.epochId];
+            Stake storage userStake = stakes[msg.sender][i];
+            if (userStake.amount > 0) {
+                uint256 stakeWeight = (userStake.amount * 1e18) / totalStakedPerEpoch[userStake.epochId];
                 uint256 reward = (currentBalance * stakeWeight) / 1e18;
                 totalRewards += reward;
-                stake.amount = 0; // Reset stake after claiming
+                userStake.amount = 0; // Reset stake after claiming
             }
         }
 
